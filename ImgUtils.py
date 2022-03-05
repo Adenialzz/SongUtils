@@ -9,7 +9,8 @@ import os.path as osp
 def readSingleImagePIL(image_path, rgb=False):
     img = Image.open(image_path)
     if rgb:
-        return img.convert("RGB") else:
+        return img.convert("RGB") 
+    else:
         return img
 
 def readSingleImageCV2(image_path):
