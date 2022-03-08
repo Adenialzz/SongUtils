@@ -50,7 +50,9 @@ def tensor2np(img_tensor):
     arr = img_tensor.numpy()
     return arr
 
-def pil2tensor(img):
+def pil2tensor(img, transforms=None):
+    if transforms is not None:
+        img_tensor = transforms(img)
     img_tensor = transforms.functional.to_tensor(img)
     return img_tensor
 
@@ -58,7 +60,14 @@ def tensor2pil(img_tesnor):
     img = transforms.functional.to_pil_image(img_tensor)
     return img
 
+def getTransforms(crop=None, resize=None):
+    t = []
+    if crop is not None:
+        t.append(transforms.Crop(crop))
+    if resize is not None:
+        t.append(transforms.Resize(resize))
 
+    return transforms.Compose(t)
 
 if __name__ == "__main__":
     pass
