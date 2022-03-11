@@ -5,6 +5,7 @@
 ```python
 get_recur_file_list(root, ignore_keywords=None)
 ```
+> Description: Get the result of recursively traversing a given directory.
 
 - **Parameters**
 
@@ -31,6 +32,8 @@ get_recur_file_list(root, ignore_keywords=None)
 ```python
 split_files(root_files_dir, output_dir, num_per_group, shuffle=False)
 ```
+
+> Descriprion: Divide all files in a given directory into several groups according to the specified number and store them in the output directory.
 
 - **Parameters**
 
