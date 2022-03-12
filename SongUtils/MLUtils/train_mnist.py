@@ -5,7 +5,7 @@ from torchvision import datasets, transforms
 import sys
 import argparse
 from BaseTrainers import BaseTrainer
-from BaseArgs import Params
+from BaseArgs import YamlParams, get_basic_parser
 
 class Net(nn.Module):
     def __init__(self):
@@ -25,6 +25,12 @@ class Net(nn.Module):
         x = self.fc2(x)
         return F.log_softmax(x, dim=1)
 
+
+def get_args():
+    parser = get_basic_parser()
+    parser.add_argument("--dataset-name", type=str, default="mnist")
+    cfg = parser.parse_args()
+    return cfg
 
 def main(cfg):
     train_loader = torch.utils.data.DataLoader(
@@ -47,5 +53,6 @@ def main(cfg):
 
 
 if __name__ == "__main__":
-    cfg = Params(sys.argv[1])
+    # cfg = YamlParams(sys.argv[1])
+    cfg = get_args()
     main(cfg)
