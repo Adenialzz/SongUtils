@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-from torch.optim import SGD
+from torch.optim import SGD, Adam
+from torch.optim.lr_scheduler import LambdaLR
 from tensorboardX import SummaryWriter
 import os
 import os.path as osp
@@ -23,9 +24,17 @@ class BaseTrainer(object):
         self.logger = logging.getLogger(__name__)
         self.loss_func = self.get_loss_func()
     
+    def get_lr_scheduler(self):
+        if self.cfg.lr_scheduler_type == "lambdalr":
+            return LambdaLR(self.optimizer, lr_lambda=lambda epoch: 1 / (epoch+1))
+        else:
+            return None
+
     def get_optimizer(self):
         if self.cfg.optimizer_type == "sgd":
             return SGD(self.model.parameters(), lr=self.cfg.lr, momentum=0.9, weight_decay=self.cfg.weight_decay)
+        elif self.cfg.optimizer_type == "adam":
+            return Adam(self.model.parameters(), lr=self.cfg.lr)
     
     def get_loss_func(self): 
         return torch.nn.CrossEntropyLoss()
@@ -79,7 +88,8 @@ class BaseTrainer(object):
         torch.save(state, osp.join(self.cfg.model_path, f"model_{epoch}.pth"))
     
     def update_lr(self):
-        pass
+        if self.lr_scheduler is not None:
+            self.lr_scheduler.step()
 
     def forward(self):
         for epoch in range(self.cfg.epochs):
@@ -90,6 +100,7 @@ class BaseTrainer(object):
                 val_metrics_dict = self.epoch_forward(isTrain=False, epoch=epoch)
             self.plot_epoch_metric(epoch, train_metrics_dict, val_metrics_dict)
             self.save_model(epoch)
+            self.update_lr()
 
             
 

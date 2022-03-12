@@ -18,6 +18,7 @@ def get_basic_parser():
     # optimizing procedure
     parser.add_argument("--optimizer-type", type=str, choices=['sgd', 'adam'], default='sgd')
     parser.add_argument("--lr", type=float, default=0.001)
+    parser.add_argument("--lr_scheduler_type", type=str, default="none", choices=["none", "lambdalr"])
     parser.add_argument("--weight-decay", type=float, default=0.)
 
     # save logs and results
