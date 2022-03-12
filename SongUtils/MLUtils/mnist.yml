@@ -1,0 +1,21 @@
+# training procedure
+epochs: 100
+batchSize: 64
+
+# optimizing procedure
+optimizer_type: sgd
+lr: 0.001
+weight_decay: 0.
+
+# save logs and models
+log_freq: 100
+log_level: DEBUG
+summary_path: ./summary
+model_path: ./saved_model
+
+# Misc
+device: cuda:1
+
+# Customized
+test: tesing
+test1: testing
