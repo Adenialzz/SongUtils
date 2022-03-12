@@ -27,7 +27,8 @@ class BaseTrainer(object):
         if self.cfg.optimizer_type == "sgd":
             return SGD(self.model.parameters(), lr=self.cfg.lr, momentum=0.9, weight_decay=self.cfg.weight_decay)
     
-    def get_loss_func(self): return torch.nn.CrossEntropyLoss()
+    def get_loss_func(self): 
+        return torch.nn.CrossEntropyLoss()
     
     def epoch_forward(self, isTrain, epoch):
         # for metric in self.metrics_list:
@@ -62,11 +63,9 @@ class BaseTrainer(object):
                 for metric in self.metrics_list:
                     self.logger.debug(f"\t {metric}: {eval(f'_{metric}.avg')}")
 
-        metrics_value_list = []
+        metrics_dict = {}
         for metric in self.metrics_list:
-            metric_value = eval(f"{'_' + metric}.avg")
-            metrics_value_list.append(metric_value)
-        metrics_dict = {metric: value for metric, value in zip(self.metrics_list, metrics_value_list)}
+            metrics_dict[metric] = eval('_' + metric).avg
         return metrics_dict
 
     def plot_epoch_metric(self, epoch, train_dict, val_dict):
@@ -84,10 +83,10 @@ class BaseTrainer(object):
 
     def forward(self):
         for epoch in range(self.cfg.epochs):
-            self.logger.info("Training:")
+            self.logger.info(f"Training Epoch = {epoch}")
             train_metrics_dict = self.epoch_forward(isTrain=True, epoch=epoch)
             with torch.no_grad():
-                self.logger.info("Validating:")
+                self.logger.info(f"Validating Epoch = {epoch}")
                 val_metrics_dict = self.epoch_forward(isTrain=False, epoch=epoch)
             self.plot_epoch_metric(epoch, train_metrics_dict, val_metrics_dict)
             self.save_model(epoch)
