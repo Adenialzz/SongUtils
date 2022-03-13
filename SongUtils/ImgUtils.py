@@ -15,18 +15,16 @@ def readSingleImagePIL(image_path, rgb=False):
 
 def readSingleImageCV2(image_path):
     img = cv2.imread(image_path)
-    img = img[:, :, ::-1]
-    img = img.transpose(2, 0, 1)
-    print(img.shape)
+    img = img[:, :, ::-1]       # bgr 2 rgb
     return img
 
-def readTensorImage(image_path, expand=False, through='pil'):
+def readTensorImage(image_path, expand=False, through='pil', transform=None):
     if through == 'pil':
         img = readSingleImagePIL(image_path)
-        img_tensor = pil2tensor(img)
+        img_tensor = pil2tensor(img, transform)
     elif through == 'opencv':
         arr = readSingleImageCV2(image_path)
-        img_tensor = np2tensor(arr.copy())
+        img_tensor = cv2tensor(arr.copy())
     else:
         raise KeyError
 
@@ -41,19 +39,26 @@ def readBatchImages(images_dir, rgb=False):
         image_path = osp.join(images_dir, image_name)
     # TODO
 
-def np2tensor(arr):
-    arr = arr.astype(np.float32) / 255.
-    img_tensor = torch.from_numpy(arr)
-    return img_tensor
+def cv2tensor(arr, transform=None):
+    if transform is not None:
+        return transform(arr)
+    else:
+        arr = arr.transpose(2, 0, 1).astype(np.float32) / 255.  # HWC 2 CHW && normalize
+        img_tensor = torch.from_numpy(arr)
+        return img_tensor
 
-def tensor2np(img_tensor):
-    arr = img_tensor.numpy()
-    return arr
+def tensor2cv(img_tensor, convert_rgb=False):
+    arr = img_tensor.detach().permute(1, 2, 0).numpy() * 255.
+    if convert_rgb:
+        return arr[:, :, ::-1]
+    else:
+        return arr
 
-def pil2tensor(img, transforms=None):
+def pil2tensor(img, transform=None):
     if transforms is not None:
-        img_tensor = transforms(img)
-    img_tensor = transforms.functional.to_tensor(img)
+        img_tensor = transform(img)
+    else:
+        img_tensor = transforms.functional.to_tensor(img)
     return img_tensor
 
 def tensor2pil(img_tesnor):
@@ -70,4 +75,8 @@ def getTransforms(crop=None, resize=None):
     return transforms.Compose(t)
 
 if __name__ == "__main__":
-    pass
+    image_path = "/ssd1t/song/Datasets/AVA/shortEdge256/125.jpg"
+    ten = readTensorImage(image_path, through="opencv")
+    img = tensor2cv(ten, True)
+    cv2.imwrite("test.jpg", img)
+
