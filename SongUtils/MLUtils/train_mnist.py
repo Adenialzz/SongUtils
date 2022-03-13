@@ -33,12 +33,8 @@ def get_args():
     cfg = parser.parse_args()
     return cfg
 
-def main(cfg):
-    # os.environ['CUDA_VISIBLE_DEVICES'] = cfg.gpu_id
-    # torch.distributed.init_process_group(backend="nccl")
-    # local_rank = torch.distributed.get_rank()
-    # torch.cuda.set_device(local_rank)
-    init_dist(cfg.gpu_id)
+def main_worker(local_rank, nprocs, cfg):
+    init_dist(cfg.gpu_id, cfg.nprocs, local_rank)
 
     pipeline = transforms.Compose([
             transforms.ToTensor(),
@@ -53,6 +49,7 @@ def main(cfg):
 
 
 if __name__ == "__main__":
+    import torch.multiprocessing as mp
     # cfg = YamlParams(sys.argv[1])
     cfg = get_args()
-    main(cfg)
+    mp.spawn(main_worker, nprocs=cfg.nprocs, args=(cfg.nprocs, cfg))      # functional programming

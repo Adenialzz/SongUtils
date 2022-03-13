@@ -141,8 +141,12 @@ class BaseDistTrainer(BaseTrainer):
         self.train_loader = DataLoader(train_set, batch_size=self.cfg.batchSize, sampler=train_sampler)
         self.val_loader = DataLoader(val_set, batch_size=self.cfg.batchSize, sampler=val_sampler)
 
-def init_dist(gpu_id):
+def init_dist(gpu_id, nprocs, local_rank):
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_id
-    torch.distributed.init_process_group(backend="nccl")
-    local_rank = torch.distributed.get_rank()
+    torch.distributed.init_process_group(backend="nccl",
+                                        init_method='tcp://127.0.0.1:23456',
+                                        world_size=nprocs,
+                                        rank=local_rank
+    )
+    # local_rank = torch.distributed.get_rank()
     torch.cuda.set_device(local_rank)

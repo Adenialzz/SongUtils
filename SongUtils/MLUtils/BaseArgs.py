@@ -35,6 +35,7 @@ def get_base_parser():
 def get_dist_base_parser():
     parser = get_base_parser()
     parser.add_argument("--local_rank", type=int)
+    parser.add_argument("--nprocs", type=int, default=1)
     return parser
 
 
