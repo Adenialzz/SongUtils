@@ -2,10 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import datasets, transforms
+import os
 import sys
 import argparse
-from BaseTrainers import BaseTrainer
-from BaseArgs import YamlParams, get_basic_parser
+from BaseTrainers import BaseTrainer, BaseDistTrainer, init_dist
+from BaseArgs import YamlParams, get_dist_base_parser, get_base_parser
 
 class Net(nn.Module):
     def __init__(self):
@@ -27,28 +28,27 @@ class Net(nn.Module):
 
 
 def get_args():
-    parser = get_basic_parser()
+    parser = get_dist_base_parser()
     parser.add_argument("--dataset-name", type=str, default="mnist")
     cfg = parser.parse_args()
     return cfg
 
 def main(cfg):
-    train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=True, download=True,
-                       transform=transforms.Compose([
-                           transforms.ToTensor(),
-                           transforms.Normalize((0.1307,), (0.3081,))
-                       ])),
-        batch_size=cfg.batchSize, shuffle=True)
-    val_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=False, transform=transforms.Compose([
-                           transforms.ToTensor(),
-                           transforms.Normalize((0.1307,), (0.3081,))
-                       ])),
-        batch_size=cfg.batchSize, shuffle=True)
-    loader_list = [train_loader, val_loader]
+    # os.environ['CUDA_VISIBLE_DEVICES'] = cfg.gpu_id
+    # torch.distributed.init_process_group(backend="nccl")
+    # local_rank = torch.distributed.get_rank()
+    # torch.cuda.set_device(local_rank)
+    init_dist(cfg.gpu_id)
+
+    pipeline = transforms.Compose([
+            transforms.ToTensor(),
+    ])
+    train_set = datasets.MNIST("../data", train=True, transform=pipeline, download=True)
+    val_set = datasets.MNIST("../data", train=False, transform=pipeline, download=True)
+    dataset_list = [train_set, val_set]
     model = Net()
-    mnist_trainer = BaseTrainer(cfg, model, loader_list, metrics_list=['loss', 'acc'])
+    mnist_trainer = BaseDistTrainer(cfg, model, dataset_list, metrics_list=['loss', 'acc'])
+    # mnist_trainer = BaseTrainer(cfg, model, dataset_list, metrics_list=['loss', 'acc'])
     mnist_trainer.forward()
 
 

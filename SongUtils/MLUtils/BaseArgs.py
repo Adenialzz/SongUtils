@@ -9,7 +9,7 @@ class YamlParams:
     def __getattr__(self, item):
         return self.params.get(item, None)
 
-def get_basic_parser():
+def get_base_parser():
     parser = argparse.ArgumentParser()
     # training procedure
     parser.add_argument("--epochs", type=int, default=100)
@@ -28,7 +28,13 @@ def get_basic_parser():
     parser.add_argument("--model-path", type=str, default="./saved_model")
 
     # Misc
-    parser.add_argument("--device", type=str, default="cuda:0")
+    parser.add_argument("--device", type=str, default="cuda")
+    parser.add_argument("--gpu-id", type=str, default="0")
+    return parser
+
+def get_dist_base_parser():
+    parser = get_base_parser()
+    parser.add_argument("--local_rank", type=int)
     return parser
 
 

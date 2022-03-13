@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 from torch.optim import SGD, Adam
 from torch.optim.lr_scheduler import LambdaLR
 from tensorboardX import SummaryWriter
@@ -8,36 +10,55 @@ import os.path as osp
 import logging
 
 import sys
-sys.path.append('..')
-from MetricUtils import AverageMeter, accuracy
+from SongUtils.MetricUtils import AverageMeter, accuracy
 
 class BaseTrainer(object):
-    def __init__(self, cfg, model, dataloader_list, metrics_list):
+    def __init__(self, cfg, model, dataset_list, metrics_list):
         self.cfg = cfg
-        self.device = torch.device(self.cfg.device)
-        self.model = model.to(self.device)
-        self.optimizer = self.get_optimizer()
-        self.train_loader, self.val_loader = dataloader_list
+        self.init_logger()
+        self.init_device()
+        self.init_writer()
+        self.init_loss_func()
+        self.init_model(model)
+        self.init_optimizer()
+        self.init_lr_scheduler()
+
+        train_set, val_set = dataset_list
+        self.init_dataloader(train_set, val_set)
+
         self.metrics_list = metrics_list
-        self.writer = SummaryWriter(self.cfg.summary_path)
+    
+    def init_logger(self):
         logging.basicConfig(level=eval(f"logging.{self.cfg.log_level}"), format='%(asctime)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger(__name__)
-        self.loss_func = self.get_loss_func()
-    
-    def get_lr_scheduler(self):
-        if self.cfg.lr_scheduler_type == "lambdalr":
-            return LambdaLR(self.optimizer, lr_lambda=lambda epoch: 1 / (epoch+1))
-        else:
-            return None
 
-    def get_optimizer(self):
+    def init_writer(self):
+        self.writer = SummaryWriter(self.cfg.summary_path)
+
+    def init_device(self):
+        self.device = torch.device(self.cfg.device)
+
+    def init_model(self, model):
+        self.model = model.to(self.device)
+
+    def init_dataloader(self, train_set, val_set):
+        self.train_loader = DataLoader(train_set, batch_size=self.cfg.batchSize, shuffle=True)
+        self.val_loader = DataLoader(val_set, batch_size=self.cfg.batchSize, shuffle=False)
+
+    def init_lr_scheduler(self):
+        if self.cfg.lr_scheduler_type == "lambdalr":
+            self.lr_scheduler = LambdaLR(self.optimizer, lr_lambda=lambda epoch: 1 / (epoch+1))
+        else:
+            self.lr_scheduler = None
+
+    def init_optimizer(self):
         if self.cfg.optimizer_type == "sgd":
-            return SGD(self.model.parameters(), lr=self.cfg.lr, momentum=0.9, weight_decay=self.cfg.weight_decay)
+            self.optimizer = SGD(self.model.parameters(), lr=self.cfg.lr, momentum=0.9, weight_decay=self.cfg.weight_decay)
         elif self.cfg.optimizer_type == "adam":
-            return Adam(self.model.parameters(), lr=self.cfg.lr)
+            self.optimizer = Adam(self.model.parameters(), lr=self.cfg.lr)
     
-    def get_loss_func(self): 
-        return torch.nn.CrossEntropyLoss()
+    def init_loss_func(self): 
+        self.loss_func = torch.nn.CrossEntropyLoss()
     
     def epoch_forward(self, isTrain, epoch):
         # for metric in self.metrics_list:
@@ -52,7 +73,6 @@ class BaseTrainer(object):
             self.model.eval()
             loader = self.val_loader
         
-        correct = 0
         for epoch_step, data in enumerate(loader):
             image = data[0].to(self.device)
             label = data[1].to(self.device)
@@ -104,7 +124,25 @@ class BaseTrainer(object):
 
             
 
+class BaseDistTrainer(BaseTrainer):
+    def __init__(self, cfg, model, dataset_list, metrics_list):
+        super(BaseDistTrainer, self).__init__(cfg, model, dataset_list, metrics_list)
+    
+    def init_device(self):
+        self.device = torch.device("cuda", self.cfg.local_rank)
+    
+    def init_model(self, model):
+        self.logger.debug("Using Distributed Model")
+        self.model = torch.nn.parallel.DistributedDataParallel(model.cuda(), device_ids=[self.cfg.local_rank])
+    
+    def init_dataloader(self, train_set, val_set):
+        train_sampler = DistributedSampler(train_set) 
+        val_sampler = DistributedSampler(val_set) 
+        self.train_loader = DataLoader(train_set, batch_size=self.cfg.batchSize, sampler=train_sampler)
+        self.val_loader = DataLoader(val_set, batch_size=self.cfg.batchSize, sampler=val_sampler)
 
-
-
-
+def init_dist(gpu_id):
+    os.environ['CUDA_VISIBLE_DEVICES'] = gpu_id
+    torch.distributed.init_process_group(backend="nccl")
+    local_rank = torch.distributed.get_rank()
+    torch.cuda.set_device(local_rank)
