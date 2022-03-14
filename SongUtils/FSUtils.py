@@ -2,7 +2,6 @@ import os
 import os.path as osp
 import shutil
 import random
-from tqdm import tqdm
     
 def _check_ignore_keywords(curr_path, ignore_keywords):
     for kw in ignore_keywords:
@@ -38,7 +37,7 @@ def split_files(root_files_dir, output_dir, num_per_group, shuffle=False):
     if shuffle:
         random.shuffle(files_list)
     split_folder_index = 0
-    for i, image in tqdm(enumerate(files_list), total=len(files_list)):
+    for i, image in enumerate(files_list):
         if i % num_per_group == 0:
             split_folder_index += 1
             currDir = osp.join(output_dir, str(split_folder_index))
