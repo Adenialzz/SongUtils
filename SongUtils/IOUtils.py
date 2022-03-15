@@ -82,6 +82,47 @@ def getTransforms(crop=None, resize=None):
 
     return transforms.Compose(t)
 
+
+class SongImage(object):
+    # TODO
+    def __init__(self, src, rgb=False):
+        if isinstance(src, np.ndarray):
+            self.cv = src if rgb else src[:, :, ::-1]   # H, W, C
+        elif isinstance(src, PIL.JpegImagePlugin.JpegImageFile):
+            self.pil = src if rgb else src.convert('rgb')
+        elif isinstance(src, torch.Tensor):
+            if src.shape != 3:
+                print("Batched Tensor NOT Supported yet, SongImage Initialization Failed.")
+            self.tensor = src
+        elif isinstance(src, str):
+            if os.path.exists(src):
+                self.pil = Image.open(src).convert('rgb')
+            else:
+                print(f"Error: File Not Exists: {src}, SongImage Initialization Failed.")
+        else:
+            print(f"Error: Unknown Initialization Type: {type(src)}, SongImage Initialization Failed.")
+    
+    def pil2cv(self):
+        pass
+    
+    def pil2tensor(self, transforms=None):
+        if transform is not None:
+            return transform(self.pil)
+        else:
+            return transform.functional.to_tensor(self.pil)
+    
+    def cv2tensor(self, transform=None):
+        pass
+
+    def tensor2pil(self):
+        return transforms.functional.to_pil_image(self.tensor)
+    
+    def tensor2cv(self):
+        pass
+
+
+
+
 if __name__ == "__main__":
     image_path = "/ssd1t/song/Datasets/AVA/shortEdge256/125.jpg"
     ten = readTensorImage(image_path, through="opencv")
