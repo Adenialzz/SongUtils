@@ -55,7 +55,7 @@ def cv2tensor(arr, transform=None):
         img_tensor = torch.from_numpy(arr)
         return img_tensor
 
-def tensor2cv(img_tensor, convert_rgb=False):
+def tensor2cv(img_tensor, convert_rgb=True):
     arr = img_tensor.detach().permute(1, 2, 0).numpy() * 255.
     if convert_rgb:
         return arr[:, :, ::-1]
@@ -85,11 +85,11 @@ def getTransforms(crop=None, resize=None):
 
 class SongImage(object):
     # TODO
-    def __init__(self, src, rgb=False):
+    def __init__(self, src, rgb_input=False):
         if isinstance(src, np.ndarray):
-            self.cv = src if rgb else src[:, :, ::-1]   # H, W, C
+            self.cv = src if rgb_input else src[:, :, ::-1]   # H, W, C
         elif isinstance(src, PIL.JpegImagePlugin.JpegImageFile):
-            self.pil = src if rgb else src.convert('rgb')
+            self.pil = src if rgb_input else src.convert('rgb')
         elif isinstance(src, torch.Tensor):
             if src.shape != 3:
                 print("Batched Tensor NOT Supported yet, SongImage Initialization Failed.")
@@ -112,7 +112,9 @@ class SongImage(object):
             return transform.functional.to_tensor(self.pil)
     
     def cv2tensor(self, transform=None):
-        pass
+        _img = self.cv.transpose(2, 0, 1) / 255.
+        _img = torch.from_numpy(_img).float()
+        return torch.autograd.Variable(_img)
 
     def tensor2pil(self):
         return transforms.functional.to_pil_image(self.tensor)
