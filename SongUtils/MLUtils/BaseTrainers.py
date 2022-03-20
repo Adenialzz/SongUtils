@@ -44,12 +44,18 @@ class BaseTrainer(object):
     def init_dataloader(self, train_set, val_set):
         self.train_loader = DataLoader(train_set, batch_size=self.cfg.batchSize, shuffle=True)
         self.val_loader = DataLoader(val_set, batch_size=self.cfg.batchSize, shuffle=False)
+    
+    def log_configs(self):
+        self.logger.info('*'*21, " - Configs - ", '*'*21)
+        for k, v in vars(self.cfg).items():
+            self.logger.info(k, ':', v)
+        self.logger.info('*'*56)
 
     def init_lr_scheduler(self):
+        if self.cfg.lr_scheduler_type is None:
+            self.lr_scheduler = None
         if self.cfg.lr_scheduler_type == "lambdalr":
             self.lr_scheduler = LambdaLR(self.optimizer, lr_lambda=lambda epoch: 1 / (epoch+1))
-        else:
-            self.lr_scheduler = None
 
     def init_optimizer(self):
         if self.cfg.optimizer_type == "sgd":
@@ -59,6 +65,12 @@ class BaseTrainer(object):
     
     def init_loss_func(self): 
         self.loss_func = torch.nn.CrossEntropyLoss()
+    
+    def resume(self):
+        ckpt = torch.load(self.cfg.resume, map_location=self.device)
+        self.model.load_state_dict(ckpt["state_dict"])
+        self.optimizer.load_state_dict(ckpt["optimizer"])
+        return ckpt["epoch"]
     
     def epoch_forward(self, isTrain, epoch):
         # for metric in self.metrics_list:
@@ -104,7 +116,11 @@ class BaseTrainer(object):
     def save_model(self, epoch):
         if not osp.isdir(self.cfg.model_path):
             os.mkdir(self.cfg.model_path)
-        state = {'state_dict': self.model.state_dict(), 'optimizer': self.optimizer.state_dict(), 'epoch': epoch}
+        state = {
+            'state_dict': self.model.state_dict(),
+            'optimizer': self.optimizer.state_dict(),
+            'epoch': epoch
+        }
         torch.save(state, osp.join(self.cfg.model_path, f"model_{epoch}.pth"))
     
     def update_lr(self):
@@ -112,7 +128,13 @@ class BaseTrainer(object):
             self.lr_scheduler.step()
 
     def forward(self):
-        for epoch in range(self.cfg.epochs):
+        self.log_configs()
+        if self.cfg.resume is not None:
+            start_epoch = self.resume() + 1
+        else:
+            start_epoch = 0
+
+        for epoch in range(start_epoch, self.cfg.epochs):
             self.logger.info(f"Training Epoch = {epoch}")
             train_metrics_dict = self.epoch_forward(isTrain=True, epoch=epoch)
             with torch.no_grad():

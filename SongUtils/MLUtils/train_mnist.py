@@ -34,7 +34,7 @@ def get_args():
     return cfg
 
 def main_worker(local_rank, nprocs, cfg):
-    init_dist(cfg.gpu_id, cfg.nprocs, local_rank)
+    # init_dist(cfg.gpu_id, cfg.nprocs, local_rank)
 
     pipeline = transforms.Compose([
             transforms.ToTensor(),
@@ -43,13 +43,15 @@ def main_worker(local_rank, nprocs, cfg):
     val_set = datasets.MNIST("../data", train=False, transform=pipeline, download=True)
     dataset_list = [train_set, val_set]
     model = Net()
-    mnist_trainer = BaseDistTrainer(cfg, model, dataset_list, metrics_list=['loss', 'acc'])
-    # mnist_trainer = BaseTrainer(cfg, model, dataset_list, metrics_list=['loss', 'acc'])
+    # mnist_trainer = BaseDistTrainer(cfg, model, dataset_list, metrics_list=['loss', 'acc'])
+    mnist_trainer = BaseTrainer(cfg, model, dataset_list, metrics_list=['loss', 'acc'])
     mnist_trainer.forward()
 
 
 if __name__ == "__main__":
-    import torch.multiprocessing as mp
+    # import torch.multiprocessing as mp
     # cfg = YamlParams(sys.argv[1])
     cfg = get_args()
-    mp.spawn(main_worker, nprocs=cfg.nprocs, args=(cfg.nprocs, cfg))      # functional programming
+    # mp.spawn(main_worker, nprocs=cfg.nprocs, args=(cfg.nprocs, cfg))      # functional programming
+
+    main_worker(None, None, cfg)
