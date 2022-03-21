@@ -10,7 +10,7 @@ except:
 
 setup(
     name = "SongUtils",      #这里是pip项目发布的名称
-    version = "0.0.2",  #版本号，数值大的会优先被pip
+    version = "0.0.6",  #版本号，数值大的会优先被pip
     keywords = ["pip", "SongUtils"],
     description = "Junjie's private utils.",
     long_description = "Junjie's private utils.",
