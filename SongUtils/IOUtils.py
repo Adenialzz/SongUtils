@@ -6,6 +6,9 @@ import cv2
 import os
 import os.path as osp
 
+import json
+import pickle
+
 def readByLines(file_name, strip=True):
     with open(file_name, 'r') as f:
         f_lines = f.readlines()
@@ -13,6 +16,16 @@ def readByLines(file_name, strip=True):
         return [line.strip() for line in f_lines]
     else:
         return f_lines
+
+def read_json(json_file):
+    with open(json_file, 'r') as f:
+        json_data = json.load(f)
+    return json_data
+
+def read_pkl(pkl_file):
+    with open(pkl_file, 'rb') as f:
+        pkl_data = pickle.load(f)
+    return pkl_dat
 
 def readSingleImagePIL(image_path, rgb=True):
     img = Image.open(image_path)

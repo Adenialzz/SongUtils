@@ -45,11 +45,22 @@ class BaseTrainer(object):
         self.train_loader = DataLoader(train_set, batch_size=self.cfg.batchSize, shuffle=True)
         self.val_loader = DataLoader(val_set, batch_size=self.cfg.batchSize, shuffle=False)
     
-    def log_configs(self):
-        self.logger.info('*'*21, " - Configs - ", '*'*21)
+    def print_configs(self):
+        print('*'*21, " - Configs - ", '*'*21)
         for k, v in vars(self.cfg).items():
-            self.logger.info(k, ':', v)
-        self.logger.info('*'*56)
+            if v is None:
+                v = "None"
+            print(k, ':', v)
+        print('*'*56)
+    
+    def write_configs_to_txt(self):
+        with open(self.summary_path, 'w') as f:
+            f.writelines('*'*21, " - Configs - ", '*'*21+'\n')
+            for k, v in vars(self.cfg).items():
+                if v is None:
+                    v = "None"
+                f.writelines(k, ':', v+'\n')
+            f.writelines('*'*56 + '\n')
 
     def init_lr_scheduler(self):
         if self.cfg.lr_scheduler_type is None:
@@ -128,7 +139,7 @@ class BaseTrainer(object):
             self.lr_scheduler.step()
 
     def forward(self):
-        self.log_configs()
+        self.print_configs()
         if self.cfg.resume is not None:
             start_epoch = self.resume() + 1
         else:

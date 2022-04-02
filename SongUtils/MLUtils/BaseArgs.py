@@ -25,7 +25,7 @@ def get_base_parser():
     # save logs and results
     parser.add_argument("--log-freq", type=int, default=100)
     parser.add_argument("--log-level", type=str, choices=['INFO', 'DEBUG'], default='DEBUG')
-    parser.add_argument("-tbx-path", type=str, default="./debug_summary")
+    parser.add_argument("--summary-path", type=str, default="./debug_summary")
     parser.add_argument("--model-path", type=str, default="./debug_saved_model")
 
     # Misc
