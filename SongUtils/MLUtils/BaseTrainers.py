@@ -50,8 +50,14 @@ class BaseTrainer(object):
         for k, v in vars(self.cfg).items():
             if v is None:
                 v = "None"
-            print(k, ':', v)
+            print(f"{k}: {v}")
         print('*'*56)
+
+    def write_configs(self):
+        save_path = osp.join(self.cfg.summary_path, 'configs.yml')
+        with open(save_path, 'w') as f:
+            for k, v in vars(self.cfg).items():
+                f.writelines(f"{k}: {v}\n")
     
     def write_configs_to_txt(self):
         with open(self.summary_path, 'w') as f:
@@ -65,7 +71,7 @@ class BaseTrainer(object):
     def init_lr_scheduler(self):
         if self.cfg.lr_scheduler_type is None:
             self.lr_scheduler = None
-        if self.cfg.lr_scheduler_type == "lambdalr":
+        elif self.cfg.lr_scheduler_type == "lambdalr":
             self.lr_scheduler = LambdaLR(self.optimizer, lr_lambda=lambda epoch: 1 / (epoch+1))
 
     def init_optimizer(self):
@@ -140,6 +146,7 @@ class BaseTrainer(object):
 
     def forward(self):
         self.print_configs()
+        self.write_configs()
         if self.cfg.resume is not None:
             start_epoch = self.resume() + 1
         else:
