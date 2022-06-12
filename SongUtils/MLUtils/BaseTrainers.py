@@ -15,9 +15,9 @@ from SongUtils.MetricUtils import AverageMeter, accuracy
 class BaseTrainer(object):
     def __init__(self, cfg, model, dataset_list, metrics_list):
         self.cfg = cfg
+        self.init_writer()
         self.init_logger()
         self.init_device()
-        self.init_writer()
         self.init_loss_func()
         self.init_model(model)
         self.init_optimizer()
@@ -29,8 +29,19 @@ class BaseTrainer(object):
         self.metrics_list = metrics_list
     
     def init_logger(self):
-        logging.basicConfig(level=eval(f"logging.{self.cfg.log_level}"), format='%(asctime)s - %(levelname)s - %(message)s')
+        # logging.basicConfig(level=eval(f"logging.{self.cfg.log_level}"), format='%(asctime)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        log_file_handler = logging.FileHandler(osp.join(self.cfg.summary_path, 'training.log'), 'a', encoding='utf-8')
+        std_out_handler = logging.StreamHandler(sys.stdout)
+
         self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(eval(f"logging.{self.cfg.log_level}"))
+
+        log_file_handler.setFormatter(formatter)
+        std_out_handler.setFormatter(formatter)
+
+        self.logger.addHandler(log_file_handler)
+        self.logger.addHandler(std_out_handler)
 
     def init_writer(self):
         self.writer = SummaryWriter(self.cfg.summary_path)
@@ -42,8 +53,19 @@ class BaseTrainer(object):
         self.model = model.to(self.device)
 
     def init_dataloader(self, train_set, val_set):
-        self.train_loader = DataLoader(train_set, batch_size=self.cfg.batchSize, shuffle=True)
-        self.val_loader = DataLoader(val_set, batch_size=self.cfg.batchSize, shuffle=False)
+        self.train_loader = DataLoader(
+                train_set, 
+                batch_size=self.cfg.batchSize, 
+                num_workers=self.cfg.num_workers, 
+                pin_memory=True if self.cfg.num_workers > 0 else False,
+                shuffle=True
+                )
+        self.val_loader = DataLoader(
+                val_set, 
+                batch_size=self.cfg.batchSize, 
+                num_workers=self.cfg.num_workers, 
+                pin_memory=True if self.cfg.num_workers > 0 else False,
+                shuffle=False)
     
     def print_configs(self):
         print('*'*21, " - Configs - ", '*'*21)

@@ -31,6 +31,7 @@ def get_base_parser():
     # Misc
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--gpu-id", type=str, default="0")
+    parser.add_argument("--num-workers", type=int, default=6)
     return parser
 
 def get_dist_base_parser():
